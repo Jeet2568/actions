@@ -34,12 +34,12 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            # Stop running container (if exists)
-            docker stop actions-container || true
-            docker rm actions-container || true
+      # Stop running container (if exists)
+            sudo docker stop actions-container || true
+            sudo docker rm actions-container || true
 
-            # Pull the latest image
-            docker pull jeet2568/actions:latest
+      # Pull the latest image
+            sudo docker pull jeet2568/actions:latest
 
-            # Run new container
-            docker run -d --name actions-container -p 80:80 jeet2568/actions:latest
+      # Run new container
+            sudo docker run -d --name actions-container -p 80:80 jeet2568/actions:latest
