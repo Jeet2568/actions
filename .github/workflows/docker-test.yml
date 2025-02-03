@@ -1,38 +1,45 @@
-name: CI/CD Pipeline with Docker
+name: Deploy to Oracle Server
 
 on:
   push:
     branches:
-      - main  # Deploy when changes are pushed to main branch
+      - main  # Runs when pushing to the main branch
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
+      # 1️⃣ Checkout repository
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
 
+      # 2️⃣ Log in to Docker Hub
       - name: Log in to Docker Hub
         run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
 
-      - name: Build and Push Docker Image
-        run: |
-          docker build -t your-dockerhub-username/actions:latest .
-          docker push your-dockerhub-username/actions:latest
+      # 3️⃣ Build Docker Image
+      - name: Build Docker Image
+        run: docker build -t jeet2568/actions:latest .
 
-      - name: Setup SSH Connection
-        run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -H 80.255.192.0 >> ~/.ssh/known_hosts
+      # 4️⃣ Push Docker Image to Docker Hub
+      - name: Push Docker Image
+        run: docker push jeet2568/actions:latest
 
-      - name: Deploy on Oracle Server
-        run: |
-          ssh -i ~/.ssh/id_rsa ubuntu@80.255.192.0 << 'EOF'
+      # 5️⃣ Deploy to Oracle Server
+      - name: Deploy to Oracle Server
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            # Stop running container (if exists)
+            docker stop actions-container || true
+            docker rm actions-container || true
+
+            # Pull the latest image
             docker pull jeet2568/actions:latest
-            docker stop my-app-container || true
-            docker rm my-app-container || true
-            docker run -d --name my-app-container -p 80:3000 jeet2568/actions:latest
-          EOF
+
+            # Run new container
+            docker run -d --name actions-container -p 80:80 jeet2568/actions:latest
