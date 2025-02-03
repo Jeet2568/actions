@@ -1,8 +1,11 @@
-# Use an official Nginx image to serve the static HTML file
+# Use an ARM64-compatible Nginx image
 FROM nginx:alpine
 
-# Copy the local HTML file to the Nginx container
-COPY index.html /usr/share/nginx/html/
+# Copy your index.html to Nginx default directory
+COPY index.html /usr/share/nginx/html/index.html
 
 # Expose port 80
 EXPOSE 80
+
+# Start Nginx
+CMD ["nginx", "-g", "daemon off;"]
