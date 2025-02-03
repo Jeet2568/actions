@@ -1,11 +1,18 @@
-# Use the official Nginx image as the base image
-FROM nginx:alpine
+# Base Image
+FROM node:20-alpine  
 
-# Copy your website files to the Nginx HTML directory
-COPY . /usr/share/nginx/html
+# Set the working directory
+WORKDIR /app  
 
-# Expose port 80
-EXPOSE 80
+# Copy package files and install dependencies
+COPY package*.json ./  
+RUN npm install  
 
-# Start Nginx
-CMD ["nginx", "-g", "daemon off;"]
+# Copy application source
+COPY . .  
+
+# Expose port
+EXPOSE 3000  
+
+# Start the application
+CMD ["npm", "start"]
