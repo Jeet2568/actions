@@ -1,27 +1,38 @@
-name: Docker Test
+name: CI/CD Pipeline with Docker
 
 on:
   push:
     branches:
-      - main
+      - main  # Deploy when changes are pushed to main branch
 
 jobs:
-  build-and-test:
+  build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - name: Build Docker image
-        run: docker build -t my-website .
+      - name: Log in to Docker Hub
+        run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
 
-      - name: Run Docker container
+      - name: Build and Push Docker Image
         run: |
-          docker run -d --name my-website-container -p 8080:80 my-website
-          echo "Website is running on port 8080"
+          docker build -t your-dockerhub-username/actions:latest .
+          docker push your-dockerhub-username/actions:latest
 
-      - name: Test website
+      - name: Setup SSH Connection
         run: |
-          sleep 5 # Wait for the container to start
-          curl http://localhost:8080
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H 80.255.192.0 >> ~/.ssh/known_hosts
+
+      - name: Deploy on Oracle Server
+        run: |
+          ssh -i ~/.ssh/id_rsa ubuntu@80.255.192.0 << 'EOF'
+            docker pull jeet2568/actions:latest
+            docker stop my-app-container || true
+            docker rm my-app-container || true
+            docker run -d --name my-app-container -p 80:3000 jeet2568/actions:latest
+          EOF
