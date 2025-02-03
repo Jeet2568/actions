@@ -3,30 +3,30 @@ name: Deploy to Oracle Server
 on:
   push:
     branches:
-      - main  # Runs when pushing to the main branch
+      - main  # Runs only when pushing to the main branch
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ Checkout repository
-      - name: Checkout repository
-        uses: actions/checkout@v3
+      # ✅ Checkout the repository
+      - name: Checkout Code
+        uses: actions/checkout@v4
 
-      # 2️⃣ Log in to Docker Hub
+      # ✅ Log in to Docker Hub
       - name: Log in to Docker Hub
         run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
 
-      # 3️⃣ Build Docker Image
+      # ✅ Build the Docker image
       - name: Build Docker Image
-        run: docker build -t jeet2568/actions:latest .
+        run: docker build -t ${{ secrets.DOCKER_USERNAME }}/actions:latest .
 
-      # 4️⃣ Push Docker Image to Docker Hub
-      - name: Push Docker Image
-        run: docker push jeet2568/actions:latest
+      # ✅ Push Docker image to Docker Hub
+      - name: Push Docker Image to Docker Hub
+        run: docker push ${{ secrets.DOCKER_USERNAME }}/actions:latest
 
-      # 5️⃣ Deploy to Oracle Server
+      # ✅ Deploy to Oracle Server via SSH
       - name: Deploy to Oracle Server
         uses: appleboy/ssh-action@v0.1.10
         with:
@@ -34,12 +34,15 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-      # Stop running container (if exists)
+            # Ensure Docker is running
+            sudo systemctl start docker || true
+
+            # Stop and remove old container
             sudo docker stop actions-container || true
             sudo docker rm actions-container || true
 
-      # Pull the latest image
-            sudo docker pull jeet2568/actions:latest
+            # Pull the latest image
+            sudo docker pull ${{ secrets.DOCKER_USERNAME }}/actions:latest
 
-      # Run new container
-            sudo docker run -d --name actions-container -p 80:80 jeet2568/actions:latest
+            # Run the new container
+            sudo docker run -d --name actions-container -p 80:80 ${{ secrets.DOCKER_USERNAME }}/actions:latest
