@@ -10,23 +10,23 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # ✅ Checkout the repository
+      # Checkout the repository
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      # ✅ Log in to Docker Hub
+      # Log in to Docker Hub
       - name: Log in to Docker Hub
         run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
 
-      # ✅ Build the Docker image
+      # Build the Docker image
       - name: Build Docker Image
         run: docker build -t ${{ secrets.DOCKER_USERNAME }}/actions:latest .
 
-      # ✅ Push Docker image to Docker Hub
+      # Push Docker image to Docker Hub
       - name: Push Docker Image to Docker Hub
         run: docker push ${{ secrets.DOCKER_USERNAME }}/actions:latest
 
-      # ✅ Deploy to Oracle Server via SSH
+      # Deploy to Oracle Server via SSH
       - name: Deploy to Oracle Server
         uses: appleboy/ssh-action@v0.1.10
         with:
@@ -37,12 +37,26 @@ jobs:
             # Ensure Docker is running
             sudo systemctl start docker || true
 
-            # Stop and remove old container
+            # Debugging: print hostname and Docker version to confirm correct connection
+            echo "=== Starting Deployment on $(hostname) ==="
+            echo "=== Docker Version ==="
+            docker version
+
+            echo "=== Containers BEFORE Deployment ==="
+            docker ps -a
+
+            # Stop and remove old container if it exists
+            echo "=== Stopping & Removing old container (if any) ==="
             sudo docker stop actions-container || true
             sudo docker rm actions-container || true
 
             # Pull the latest image
+            echo "=== Pulling New Image ==="
             sudo docker pull ${{ secrets.DOCKER_USERNAME }}/actions:latest
 
-            # Run the new container
+            # Run the new container (using port 80, change if needed)
+            echo "=== Running New Container on port 80 ==="
             sudo docker run -d --name actions-container -p 80:80 ${{ secrets.DOCKER_USERNAME }}/actions:latest
+
+            echo "=== Containers AFTER Deployment ==="
+            docker ps -a
