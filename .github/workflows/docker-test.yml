@@ -40,10 +40,9 @@ jobs:
             # Debugging: print hostname and Docker version to confirm correct connection
             echo "=== Starting Deployment on $(hostname) ==="
             echo "=== Docker Version ==="
-            docker version
-
+            sudo docker version
             echo "=== Containers BEFORE Deployment ==="
-            docker ps -a
+            sudo docker ps -a
 
             # Stop and remove old container if it exists
             echo "=== Stopping & Removing old container (if any) ==="
@@ -59,4 +58,4 @@ jobs:
             sudo docker run -d --name actions-container -p 80:80 ${{ secrets.DOCKER_USERNAME }}/actions:latest
 
             echo "=== Containers AFTER Deployment ==="
-            docker ps -a
+            sudo docker ps -a
